@@ -84,7 +84,37 @@ data/
 └── missing_ctr_list.txt     # 缺失CTR列表
 ```
 
-## 注意事项
-- 需要保持Session和Cookie才能正常下载
-- 每页间隔1秒，每文档间隔0.5秒，避免请求过快
+## ⚠️ 2026-05更新：CDE网站反爬虫变更
+
+CDE网站已部署F5反爬虫系统（返回202挑战码），**纯Python requests方式已失效**。
+
+### 新的下载方式：浏览器自动化
+
+使用`agent-browser`（Playwright内核）绕过反爬虫：
+
+```bash
+agent-browser --args "--disable-blink-features=AutomationControlled" \
+  --user-agent "Mozilla/5.0 ... Chrome/125.0.0.0 Safari/537.36" \
+  open "https://www.chinadrugtrials.org.cn/"
+agent-browser wait 3000
+```
+
+### 搜索参数（高级搜索）
+
+必须通过浏览器填写表单，**不能用POST参数**：
+- 药物名称: `细胞`
+- 药物类型: `3`（生物制品）  
+- `secondLevel=1`（高级搜索模式必须启用）
+
+### 数据获取方式
+
+Excel导出(`_export=xls`)接口**忽略POST参数**，仅使用服务器session状态。当前可行方案是**DOM爬取**：
+- 逐页修改`searchfrm.currentpage`值
+- 提交表单导航
+- 从`table tbody tr td`提取6列数据
+- 合并为CSV
+
+### 注意事项
+- 页面间延迟建议>=2秒，避免触发频率限制
 - CTR登记号作为Excel与docx文档的关联键
+- 浏览器断开后session失效，需重新导航
